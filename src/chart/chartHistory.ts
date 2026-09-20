@@ -1,16 +1,16 @@
-import type { SymbolId } from "../types";
+import type { ChartCell } from "../types";
 import { cloneCells } from "./chartModel";
 
 export interface ChartHistory {
-  past: SymbolId[][];
-  future: SymbolId[][];
+  past: ChartCell[][];
+  future: ChartCell[][];
 }
 
 export function createHistory(): ChartHistory {
   return { past: [], future: [] };
 }
 
-export function pushSnapshot(history: ChartHistory, cells: SymbolId[]): void {
+export function pushSnapshot(history: ChartHistory, cells: ChartCell[]): void {
   history.past.push(cloneCells(cells));
   history.future = [];
 }
@@ -25,8 +25,8 @@ export function canRedo(history: ChartHistory): boolean {
 
 export function undo(
   history: ChartHistory,
-  currentCells: SymbolId[],
-): SymbolId[] | null {
+  currentCells: ChartCell[],
+): ChartCell[] | null {
   if (!canUndo(history)) {
     return null;
   }
@@ -36,8 +36,8 @@ export function undo(
 
 export function redo(
   history: ChartHistory,
-  currentCells: SymbolId[],
-): SymbolId[] | null {
+  currentCells: ChartCell[],
+): ChartCell[] | null {
   if (!canRedo(history)) {
     return null;
   }

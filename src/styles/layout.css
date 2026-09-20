@@ -1,0 +1,136 @@
+/* Layout & geometry — no theme colors except via inherited text on body */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 1.25rem 1rem;
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--text-primary);
+  background: var(--page-bg);
+}
+
+.app-shell {
+  max-width: 72rem;
+  margin: 0 auto;
+  min-height: calc(100vh - 2.5rem);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--shell-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.top-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.65rem 1rem;
+  flex-shrink: 0;
+}
+
+.top-toolbar__brand {
+  font-size: 1.05rem;
+  margin-right: 0.5rem;
+}
+
+.top-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 1;
+}
+
+.top-toolbar .btn--export {
+  margin-left: auto;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: minmax(11rem, 14rem) 1fr;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  padding: 1rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem;
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sidebar-section__label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sidebar-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-field__label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.workspace {
+  min-width: 0;
+  min-height: 12rem;
+  display: flex;
+}
+
+.workspace-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem 1.5rem;
+}
+
+.symbol-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.legend-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}

@@ -3,43 +3,129 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Knit Chart Editor</title>
+    <title>KnitGrid</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Space+Grotesk:wght@600&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <h1>Knit Chart Editor</h1>
+    <div class="app-shell">
+      <header class="top-toolbar">
+        <div class="top-toolbar__brand brand-wordmark">KnitGrid</div>
+        <div class="top-toolbar__actions">
+          <button
+            type="button"
+            id="btn-undo"
+            class="btn btn-icon"
+            disabled
+            aria-label="Undo"
+            title="Undo"
+          >
+            <svg
+              class="icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M3 10h10a5 5 0 0 1 5 5v2" />
+              <path d="M3 10l4-4M3 10l4 4" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            id="btn-redo"
+            class="btn btn-icon"
+            disabled
+            aria-label="Redo"
+            title="Redo"
+          >
+            <svg
+              class="icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 10H11a5 5 0 0 0-5 5v2" />
+              <path d="M21 10l-4-4M21 10l-4 4" />
+            </svg>
+          </button>
+          <button type="button" id="btn-clear" class="btn">Clear</button>
+        </div>
+        <button type="button" id="btn-export" class="btn btn--export">
+          <svg
+            class="icon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3v12" />
+            <path d="M8 11l4 4 4-4" />
+            <path d="M4 21h16" />
+          </svg>
+          <span>Export PNG</span>
+        </button>
+      </header>
 
-    <section class="panel panel--inline">
-      <label>
-        Rows
-        <input type="number" id="input-rows" min="1" max="200" value="10" />
-      </label>
-      <label>
-        Columns
-        <input type="number" id="input-cols" min="1" max="200" value="10" />
-      </label>
-      <button type="button" id="btn-new-chart">New Chart</button>
-    </section>
+      <div class="app-body">
+        <aside class="sidebar">
+          <section class="sidebar-section">
+            <h2 class="sidebar-section__label">Chart</h2>
+            <label class="sidebar-field">
+              <span class="sidebar-field__label">Rows</span>
+              <input type="number" id="input-rows" min="1" max="200" value="10" />
+            </label>
+            <label class="sidebar-field">
+              <span class="sidebar-field__label">Columns</span>
+              <input type="number" id="input-cols" min="1" max="200" value="10" />
+            </label>
+            <button type="button" id="btn-new-chart" class="btn btn--block">
+              New Chart
+            </button>
+          </section>
 
-    <section class="panel">
-      <h2 class="section-title">Symbols</h2>
-      <div id="symbol-palette"></div>
-    </section>
+          <section class="sidebar-section">
+            <h2 class="sidebar-section__label">Stitches</h2>
+            <div id="symbol-palette" class="symbol-palette"></div>
+          </section>
 
-    <section class="panel toolbar">
-      <button type="button" id="btn-undo" disabled>Undo</button>
-      <button type="button" id="btn-redo" disabled>Redo</button>
-      <button type="button" id="btn-clear">Clear</button>
-      <button type="button" id="btn-export">Export PNG</button>
-    </section>
+          <section class="sidebar-section">
+            <h2 class="sidebar-section__label">Color</h2>
+            <div id="color-palette" class="color-palette"></div>
+          </section>
+        </aside>
 
-    <canvas id="chart-canvas"></canvas>
+        <main class="workspace">
+          <div class="workspace-inner">
+            <canvas id="chart-canvas"></canvas>
+            <div id="legend-preview" class="legend-preview"></div>
+          </div>
+        </main>
+      </div>
+    </div>
 
-    <section class="panel">
-      <div id="legend-preview" class="legend-preview"></div>
-    </section>
-
-    <dialog id="symbol-dialog" class="symbol-dialog">
+    <dialog id="symbol-dialog" class="editor-dialog">
       <h2>Create Symbol</h2>
       <form method="dialog" id="symbol-dialog-form">
         <div class="dialog-field">
@@ -57,8 +143,8 @@
         </label>
         <p id="create-symbol-error" class="error" hidden></p>
         <div class="dialog-actions">
-          <button type="button" id="btn-dialog-cancel">Cancel</button>
-          <button type="button" id="btn-dialog-create">Create</button>
+          <button type="button" id="btn-dialog-cancel" class="btn">Cancel</button>
+          <button type="button" id="btn-dialog-create" class="btn">Create</button>
         </div>
       </form>
       <div
@@ -68,6 +154,51 @@
         aria-live="polite"
       >
         Symbol already exists
+      </div>
+    </dialog>
+
+    <dialog id="color-dialog" class="editor-dialog">
+      <h2>Add Color</h2>
+      <p class="dialog-section-label">Quick Colors</p>
+      <div class="dialog-field dialog-field--compact">
+        <div id="color-preset-grid" class="color-preset-grid"></div>
+      </div>
+      <p class="dialog-section-label">Selected Color</p>
+      <div class="color-selected-block">
+        <div class="color-selected-row">
+          <div
+            id="color-selected-preview"
+            class="color-selected-preview"
+            aria-hidden="true"
+          ></div>
+          <label class="color-hex-label">
+            <span class="visually-hidden">Hex</span>
+            <input
+              type="text"
+              id="color-hex-input"
+              class="color-hex-input"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+        </div>
+        <button
+          type="button"
+          id="btn-choose-more-colors"
+          class="btn-choose-more-colors"
+        >
+          Choose More Colors…
+        </button>
+        <input
+          type="color"
+          id="color-native-picker"
+          class="color-native-picker-input"
+          tabindex="-1"
+        />
+      </div>
+      <div class="dialog-actions">
+        <button type="button" id="btn-color-cancel" class="btn">Cancel</button>
+        <button type="button" id="btn-color-add" class="btn">Add</button>
       </div>
     </dialog>
 

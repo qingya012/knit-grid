@@ -10,11 +10,23 @@ import {
   undo,
   type ChartHistory,
 } from "../chart/chartHistory";
-import { clearChart, createChart, getCell, setCell } from "../chart/chartModel";
+import {
+  clearChart,
+  createChart,
+  getCellBackgroundColor,
+  getCellSymbolId,
+  setCellBackgroundColor,
+  setCellSymbolId,
+} from "../chart/chartModel";
+import { parseHexColor } from "../colors/hexColor";
+
+export type PaintMode = "symbol" | "color" | "clearColor";
 
 export class EditorController {
   chart: Chart;
+  paintMode: PaintMode = "symbol";
   activeSymbolId: SymbolId = BLANK_SYMBOL_ID;
+  activeColor = "#c97a8b";
   readonly history: ChartHistory = createHistory();
 
   private strokeActive = false;
@@ -32,7 +44,21 @@ export class EditorController {
   }
 
   setActiveSymbol(symbolId: SymbolId): void {
+    this.paintMode = "symbol";
     this.activeSymbolId = symbolId;
+  }
+
+  setActiveColor(hex: string): void {
+    const parsed = parseHexColor(hex);
+    if (!parsed) {
+      return;
+    }
+    this.paintMode = "color";
+    this.activeColor = parsed;
+  }
+
+  setClearColorTool(): void {
+    this.paintMode = "clearColor";
   }
 
   beginStroke(): void {
@@ -49,16 +75,44 @@ export class EditorController {
     if (!this.strokeActive) {
       return false;
     }
-    if (!this.strokeSnapshotTaken) {
-      pushSnapshot(this.history, this.chart.cells);
-      this.strokeSnapshotTaken = true;
+
+    let changed = false;
+    if (this.paintMode === "symbol") {
+      const current = getCellSymbolId(this.chart, row, col);
+      if (current === this.activeSymbolId) {
+        return false;
+      }
+      if (!this.strokeSnapshotTaken) {
+        pushSnapshot(this.history, this.chart.cells);
+        this.strokeSnapshotTaken = true;
+      }
+      setCellSymbolId(this.chart, row, col, this.activeSymbolId);
+      changed = true;
+    } else if (this.paintMode === "color") {
+      const current = getCellBackgroundColor(this.chart, row, col);
+      if (current === this.activeColor) {
+        return false;
+      }
+      if (!this.strokeSnapshotTaken) {
+        pushSnapshot(this.history, this.chart.cells);
+        this.strokeSnapshotTaken = true;
+      }
+      setCellBackgroundColor(this.chart, row, col, this.activeColor);
+      changed = true;
+    } else if (this.paintMode === "clearColor") {
+      const current = getCellBackgroundColor(this.chart, row, col);
+      if (current === null) {
+        return false;
+      }
+      if (!this.strokeSnapshotTaken) {
+        pushSnapshot(this.history, this.chart.cells);
+        this.strokeSnapshotTaken = true;
+      }
+      setCellBackgroundColor(this.chart, row, col, null);
+      changed = true;
     }
-    const current = getCell(this.chart, row, col);
-    if (current === this.activeSymbolId) {
-      return false;
-    }
-    setCell(this.chart, row, col, this.activeSymbolId);
-    return true;
+
+    return changed;
   }
 
   undo(): boolean {

@@ -3,6 +3,8 @@ import type { Chart } from "../types";
 import { BLANK_SYMBOL_ID } from "../types";
 import type { SymbolRegistry } from "../symbols/symbolRegistry";
 import { getCell } from "../chart/chartModel";
+import { symbolFillColor } from "./cellContrast";
+import { FONT_SYMBOL_GLYPH, FONT_UI } from "./fontStacks";
 
 export interface RenderOptions {
   cellSizePx: number;
@@ -64,7 +66,7 @@ function measureRowLabelWidth(
   chart: Chart,
   labelFontSize: number,
 ): number {
-  ctx.font = `${labelFontSize}px ui-monospace, monospace`;
+  ctx.font = `${labelFontSize}px ${FONT_UI}`;
   const sample = String(chart.rows);
   return Math.ceil(ctx.measureText(sample).width);
 }
@@ -117,15 +119,30 @@ function drawGrid(
   ctx.fillStyle = opts.background;
   ctx.fillRect(originX, originY, gridWidth, gridHeight);
 
+  for (let row = 0; row < chart.rows; row++) {
+    for (let col = 0; col < chart.cols; col++) {
+      const cellData = getCell(chart, row, col);
+      if (cellData.backgroundColor !== null) {
+        ctx.fillStyle = cellData.backgroundColor;
+        ctx.fillRect(
+          originX + col * cell,
+          originY + row * cell,
+          cell,
+          cell,
+        );
+      }
+    }
+  }
+
   const fontSize = Math.round(cell * 0.55);
-  ctx.font = `${fontSize}px ui-monospace, monospace`;
+  ctx.font = `${fontSize}px ${FONT_SYMBOL_GLYPH}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = opts.textColor;
 
   for (let row = 0; row < chart.rows; row++) {
     for (let col = 0; col < chart.cols; col++) {
-      const symbolId = getCell(chart, row, col);
+      const cellData = getCell(chart, row, col);
+      const symbolId = cellData.symbolId;
       if (symbolId === BLANK_SYMBOL_ID) {
         continue;
       }
@@ -134,6 +151,7 @@ function drawGrid(
       if (!glyph) {
         continue;
       }
+      ctx.fillStyle = symbolFillColor(cellData.backgroundColor);
       const x = originX + col * cell + cell / 2;
       const y = originY + row * cell + cell / 2;
       ctx.fillText(glyph, x, y);
@@ -166,7 +184,7 @@ function drawFrameLabels(
 ): void {
   const cell = opts.cellSizePx;
   ctx.fillStyle = opts.labelColor;
-  ctx.font = `${opts.labelFontSize}px ui-monospace, monospace`;
+  ctx.font = `${opts.labelFontSize}px ${FONT_UI}`;
 
   const rowLabels = visibleRowLabels(chart.rows);
   const rowLabelCenterX =

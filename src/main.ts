@@ -8,6 +8,17 @@ import {
 } from "./render/chartRenderer";
 import { SymbolRegistry } from "./symbols/symbolRegistry";
 import {
+  addSessionColor,
+  formatColorTitle,
+  getSessionColors,
+} from "./ui/colorTools";
+import {
+  bindColorDialog,
+  openColorDialog,
+  type ColorDialogElements,
+} from "./ui/colorDialog";
+import { ERASER_ICON_SVG } from "./ui/icons";
+import {
   bindSymbolDialog,
   closeSymbolDialog,
   DUPLICATE_SYMBOL_MESSAGE,
@@ -19,8 +30,16 @@ import { BLANK_SYMBOL_ID } from "./types";
 
 const DISPLAY_CELL_SIZE = 28;
 
+function themeLabelColor(): string {
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--text-secondary")
+    .trim();
+  return raw || "#5c5c5c";
+}
+
 const canvas = document.getElementById("chart-canvas") as HTMLCanvasElement;
 const paletteEl = document.getElementById("symbol-palette")!;
+const colorPaletteEl = document.getElementById("color-palette")!;
 const legendEl = document.getElementById("legend-preview")!;
 const inputRows = document.getElementById("input-rows") as HTMLInputElement;
 const inputCols = document.getElementById("input-cols") as HTMLInputElement;
@@ -44,12 +63,29 @@ const symbolDialog: SymbolDialogElements = {
   btnCreate: document.getElementById("btn-dialog-create") as HTMLButtonElement,
 };
 
+const colorDialog: ColorDialogElements = {
+  dialog: document.getElementById("color-dialog") as HTMLDialogElement,
+  presetGrid: document.getElementById("color-preset-grid")!,
+  selectedPreview: document.getElementById("color-selected-preview")!,
+  hexInput: document.getElementById("color-hex-input") as HTMLInputElement,
+  btnChooseMore: document.getElementById(
+    "btn-choose-more-colors",
+  ) as HTMLButtonElement,
+  nativePicker: document.getElementById(
+    "color-native-picker",
+  ) as HTMLInputElement,
+  btnCancel: document.getElementById("btn-color-cancel") as HTMLButtonElement,
+  btnAdd: document.getElementById("btn-color-add") as HTMLButtonElement,
+};
+
 const registry = new SymbolRegistry();
 const editor = new EditorController(10, 10);
 
 function refreshCanvas(): void {
   renderChartFrame(canvas, editor.chart, registry, {
     cellSizePx: DISPLAY_CELL_SIZE,
+    labelFontSize: 10,
+    labelColor: themeLabelColor(),
   });
 }
 
@@ -66,15 +102,19 @@ function refreshToolbar(): void {
 function makeEraserButton(): HTMLButtonElement {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "palette-btn";
-  btn.textContent = "Eraser";
-  btn.title = "Erase cells (blank)";
-  if (editor.activeSymbolId === BLANK_SYMBOL_ID) {
+  btn.className = "palette-btn palette-btn--icon";
+  btn.innerHTML = ERASER_ICON_SVG;
+  btn.setAttribute("aria-label", "Eraser");
+  btn.title = "Eraser";
+  if (
+    editor.paintMode === "symbol" &&
+    editor.activeSymbolId === BLANK_SYMBOL_ID
+  ) {
     btn.classList.add("active");
   }
   btn.addEventListener("click", () => {
     editor.setActiveSymbol(BLANK_SYMBOL_ID);
-    refreshPalette();
+    refreshToolActiveState();
   });
   return btn;
 }
@@ -99,12 +139,12 @@ function makeSymbolButton(sym: {
 
   btn.append(glyph, abbr);
 
-  if (sym.id === editor.activeSymbolId) {
+  if (editor.paintMode === "symbol" && sym.id === editor.activeSymbolId) {
     btn.classList.add("active");
   }
   btn.addEventListener("click", () => {
     editor.setActiveSymbol(sym.id);
-    refreshPalette();
+    refreshToolActiveState();
   });
   return btn;
 }
@@ -112,8 +152,10 @@ function makeSymbolButton(sym: {
 function makeCreateButton(): HTMLButtonElement {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = "palette-btn palette-btn--create";
-  btn.textContent = "+ Create Symbol";
+  btn.className = "palette-btn palette-btn--icon palette-btn--create";
+  btn.textContent = "+";
+  btn.setAttribute("aria-label", "Create symbol");
+  btn.title = "Create symbol";
   btn.addEventListener("click", () => {
     openSymbolDialog(symbolDialog);
   });
@@ -129,23 +171,85 @@ function refreshPalette(): void {
   );
 }
 
+function makeColorEraserButton(): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "palette-btn palette-btn--icon";
+  btn.innerHTML = ERASER_ICON_SVG;
+  btn.setAttribute("aria-label", "Erase color");
+  btn.title = "Erase color";
+  if (editor.paintMode === "clearColor") {
+    btn.classList.add("active");
+  }
+  btn.addEventListener("click", () => {
+    editor.setClearColorTool();
+    refreshToolActiveState();
+  });
+  return btn;
+}
+
+function makeColorSwatchButton(hex: string): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "color-swatch-btn";
+  btn.style.backgroundColor = hex;
+  btn.title = formatColorTitle(hex);
+  btn.setAttribute("aria-label", `Color ${formatColorTitle(hex)}`);
+  if (editor.paintMode === "color" && editor.activeColor === hex) {
+    btn.classList.add("active");
+  }
+  btn.addEventListener("click", () => {
+    editor.setActiveColor(hex);
+    refreshToolActiveState();
+  });
+  return btn;
+}
+
+function makeAddColorButton(): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "palette-btn palette-btn--icon palette-btn--create";
+  btn.textContent = "+";
+  btn.setAttribute("aria-label", "Add color");
+  btn.title = "Add color";
+  btn.addEventListener("click", () => {
+    openColorDialog(colorDialog);
+  });
+  return btn;
+}
+
+function refreshColorPalette(): void {
+  colorPaletteEl.replaceChildren();
+  colorPaletteEl.append(
+    makeColorEraserButton(),
+    ...getSessionColors().map(makeColorSwatchButton),
+    makeAddColorButton(),
+  );
+}
+
+function refreshToolActiveState(): void {
+  refreshPalette();
+  refreshColorPalette();
+}
+
 function refreshLegend(): void {
   const entries = usedSymbolsForLegend(editor.chart, registry);
   legendEl.replaceChildren();
-  if (entries.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "legend-empty";
-    empty.textContent = "(none)";
-    legendEl.append(empty);
-    return;
-  }
   for (const entry of entries) {
+    if (!entry.symbol.trim() && !entry.abbreviation.trim()) {
+      continue;
+    }
     const item = document.createElement("span");
     item.className = "legend-key-item";
 
     const cell = document.createElement("span");
     cell.className = "legend-key-cell";
-    cell.textContent = entry.symbol;
+
+    const symbol = document.createElement("span");
+    symbol.className = "legend-key-symbol";
+    symbol.textContent = entry.symbol;
+
+    cell.append(symbol);
 
     const abbr = document.createElement("span");
     abbr.className = "legend-key-abbr";
@@ -158,7 +262,7 @@ function refreshLegend(): void {
 
 function refreshAll(): void {
   refreshCanvas();
-  refreshPalette();
+  refreshToolActiveState();
   refreshToolbar();
   refreshLegend();
 }
@@ -187,6 +291,12 @@ btnNewChart.addEventListener("click", () => {
   const cols = Number(inputCols.value) || 10;
   editor.newChart(rows, cols);
   refreshAll();
+});
+
+bindColorDialog(colorDialog, (hex) => {
+  editor.setActiveColor(hex);
+  addSessionColor(editor.activeColor);
+  refreshToolActiveState();
 });
 
 bindSymbolDialog(symbolDialog, (values) => {

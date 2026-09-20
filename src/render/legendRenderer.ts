@@ -1,4 +1,5 @@
 import type { StitchSymbol } from "../types";
+import { FONT_SYMBOL_GLYPH, FONT_UI } from "./fontStacks";
 
 export const LEGEND_GAP_PX = 16;
 
@@ -15,7 +16,10 @@ export interface LegendRenderOptions {
   abbrGap?: number;
   lineColor?: string;
   cellBackground?: string;
+  abbrFontFamily?: string;
 }
+
+const ABBR_FONT_FAMILY = FONT_UI;
 
 const DEFAULT_LEGEND_OPTIONS: Required<LegendRenderOptions> = {
   fontSize: 14,
@@ -27,6 +31,7 @@ const DEFAULT_LEGEND_OPTIONS: Required<LegendRenderOptions> = {
   abbrGap: 6,
   lineColor: KEY_CELL_LINE_COLOR,
   cellBackground: KEY_CELL_BACKGROUND,
+  abbrFontFamily: ABBR_FONT_FAMILY,
 };
 
 export interface LegendLayout {
@@ -49,6 +54,7 @@ function measureKeyItem(
   entry: StitchSymbol,
   opts: Required<LegendRenderOptions>,
 ): number {
+  ctx.font = `${opts.fontSize}px ${opts.abbrFontFamily}`;
   const abbrWidth = ctx.measureText(entry.abbreviation).width;
   return opts.keyCellSizePx + opts.abbrGap + abbrWidth;
 }
@@ -61,8 +67,6 @@ function measureLegendRows(
   if (entries.length === 0) {
     return [];
   }
-
-  ctx.font = `${opts.fontSize}px ui-monospace, monospace`;
 
   const rows: MeasuredRow[] = [];
   let current: MeasuredRow = { items: [], width: 0 };
@@ -136,7 +140,7 @@ function drawKeyCell(
 
   const glyphFontSize = Math.round(size * 0.55);
   ctx.fillStyle = opts.textColor;
-  ctx.font = `${glyphFontSize}px ui-monospace, monospace`;
+  ctx.font = `${glyphFontSize}px ${FONT_SYMBOL_GLYPH}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(glyph, x + size / 2, y + size / 2);
@@ -168,7 +172,7 @@ export function renderLegend(
       const cellY = y + (rh - opts.keyCellSizePx) / 2;
       drawKeyCell(ctx, entry.symbol, x, cellY, opts);
 
-      ctx.font = `${opts.fontSize}px ui-monospace, monospace`;
+      ctx.font = `${opts.fontSize}px ${opts.abbrFontFamily}`;
       ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.fillStyle = opts.textColor;
