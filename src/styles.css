@@ -1,0 +1,189 @@
+body {
+  font-family: system-ui, sans-serif;
+  margin: 1rem;
+  max-width: 56rem;
+}
+
+.panel {
+  margin-bottom: 1rem;
+}
+
+.panel--inline label {
+  margin-right: 0.75rem;
+}
+
+.section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+#btn-export {
+  margin-left: 1rem;
+}
+
+.error {
+  color: #c00;
+  margin: 0.5rem 0 0;
+}
+
+#symbol-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.palette-btn {
+  font-family: ui-monospace, monospace;
+  min-width: 3.5rem;
+  padding: 0.35rem 0.5rem;
+  cursor: pointer;
+  border: 1px solid #999;
+  background: #fff;
+}
+
+.palette-btn:focus {
+  outline: none;
+}
+
+.palette-btn.active {
+  border-color: #0066cc;
+  box-shadow: inset 0 0 0 2px #0066cc;
+}
+
+.palette-btn--inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.palette-btn--create {
+  font-family: system-ui, sans-serif;
+}
+
+#chart-canvas {
+  display: block;
+  border: 1px solid #999;
+  touch-action: none;
+  margin-bottom: 0.5rem;
+}
+
+.legend-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+}
+
+.legend-preview .legend-empty {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.legend-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.legend-key-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border: 1px solid #333;
+  background: #fff;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.legend-key-abbr {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+.symbol-dialog {
+  position: relative;
+  border: 1px solid #999;
+  padding: 1rem 1.25rem;
+  max-width: 22rem;
+}
+
+.symbol-dialog-toast {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.85rem;
+  color: #333;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+}
+
+.symbol-dialog h2 {
+  font-size: 1.1rem;
+  margin: 0 0 1rem;
+}
+
+.dialog-field {
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.dialog-field-label {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.stitch-control-slot {
+  width: 100%;
+}
+
+.stitch-control-slot > select,
+.stitch-control-slot > input,
+.dialog-field input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  box-sizing: border-box;
+}
+
+.stitch-control-slot > select,
+.stitch-control-slot > input {
+  margin-top: 0;
+}
+
+.btn-use-preset {
+  margin-top: 0.35rem;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #0066cc;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

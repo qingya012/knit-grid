@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Knit Chart Editor</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <h1>Knit Chart Editor</h1>
+
+    <section class="panel panel--inline">
+      <label>
+        Rows
+        <input type="number" id="input-rows" min="1" max="200" value="10" />
+      </label>
+      <label>
+        Columns
+        <input type="number" id="input-cols" min="1" max="200" value="10" />
+      </label>
+      <button type="button" id="btn-new-chart">New Chart</button>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">Symbols</h2>
+      <div id="symbol-palette"></div>
+    </section>
+
+    <section class="panel toolbar">
+      <button type="button" id="btn-undo" disabled>Undo</button>
+      <button type="button" id="btn-redo" disabled>Redo</button>
+      <button type="button" id="btn-clear">Clear</button>
+      <button type="button" id="btn-export">Export PNG</button>
+    </section>
+
+    <canvas id="chart-canvas"></canvas>
+
+    <section class="panel">
+      <div id="legend-preview" class="legend-preview"></div>
+    </section>
+
+    <dialog id="symbol-dialog" class="symbol-dialog">
+      <h2>Create Symbol</h2>
+      <form method="dialog" id="symbol-dialog-form">
+        <div class="dialog-field">
+          <span class="dialog-field-label">Stitch</span>
+          <div id="stitch-control-slot" class="stitch-control-slot">
+            <select id="stitch-preset"></select>
+          </div>
+          <button type="button" id="btn-use-preset" class="btn-use-preset" hidden>
+            Use preset
+          </button>
+        </div>
+        <label class="dialog-field">
+          Symbol
+          <input type="text" id="modal-symbol-char" maxlength="4" />
+        </label>
+        <p id="create-symbol-error" class="error" hidden></p>
+        <div class="dialog-actions">
+          <button type="button" id="btn-dialog-cancel">Cancel</button>
+          <button type="button" id="btn-dialog-create">Create</button>
+        </div>
+      </form>
+      <div
+        id="symbol-dialog-toast"
+        class="symbol-dialog-toast"
+        hidden
+        aria-live="polite"
+      >
+        Symbol already exists
+      </div>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
