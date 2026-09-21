@@ -22,5 +22,14 @@ export function usedSymbolsForLegend(
 ): StitchSymbol[] {
   return collectUsedSymbolIds(chart)
     .map((id) => registry.get(id))
-    .filter((s): s is StitchSymbol => s !== undefined);
+    .filter((s): s is StitchSymbol => s !== undefined)
+    .sort((a, b) => {
+      const byAbbr = a.abbreviation.localeCompare(b.abbreviation, undefined, {
+        sensitivity: "base",
+      });
+      if (byAbbr !== 0) {
+        return byAbbr;
+      }
+      return a.id.localeCompare(b.id);
+    });
 }

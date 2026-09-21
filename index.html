@@ -65,6 +65,69 @@
               <path d="M21 10l-4-4M21 10l-4 4" />
             </svg>
           </button>
+          <button
+            type="button"
+            id="btn-select"
+            class="btn btn-icon"
+            aria-label="Select"
+            title="Select"
+          >
+            <svg
+              class="icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <rect x="5" y="5" width="14" height="14" rx="1" stroke-dasharray="3 2" />
+            </svg>
+          </button>
+          <div
+            id="toolbar-selection-actions"
+            class="toolbar-selection-actions"
+            hidden
+          >
+            <button
+              type="button"
+              id="btn-sel-copy"
+              class="btn btn-icon"
+              aria-label="Copy"
+              title="Copy"
+            ></button>
+            <button
+              type="button"
+              id="btn-sel-cut"
+              class="btn btn-icon"
+              aria-label="Cut"
+              title="Cut"
+            ></button>
+            <button
+              type="button"
+              id="btn-sel-paste"
+              class="btn btn-icon"
+              aria-label="Paste"
+              title="Paste"
+            ></button>
+            <button
+              type="button"
+              id="btn-sel-flip-h"
+              class="btn btn-icon"
+              aria-label="Flip horizontally"
+              title="Flip horizontally"
+            ></button>
+            <button
+              type="button"
+              id="btn-sel-flip-v"
+              class="btn btn-icon"
+              aria-label="Flip vertically"
+              title="Flip vertically"
+            ></button>
+          </div>
           <button type="button" id="btn-clear" class="btn">Clear</button>
         </div>
         <button type="button" id="btn-export" class="btn btn--export">
@@ -84,7 +147,7 @@
             <path d="M8 11l4 4 4-4" />
             <path d="M4 21h16" />
           </svg>
-          <span>Export PNG</span>
+          <span>Export</span>
         </button>
       </header>
 
@@ -118,6 +181,7 @@
 
         <main class="workspace">
           <div class="workspace-inner">
+            <div id="chart-title-slot" class="chart-title-slot"></div>
             <canvas id="chart-canvas"></canvas>
             <div id="legend-preview" class="legend-preview"></div>
           </div>
@@ -199,6 +263,30 @@
       <div class="dialog-actions">
         <button type="button" id="btn-color-cancel" class="btn">Cancel</button>
         <button type="button" id="btn-color-add" class="btn">Add</button>
+      </div>
+    </dialog>
+
+    <dialog id="export-dialog" class="editor-dialog">
+      <h2>Export Chart</h2>
+      <label class="dialog-field">
+        File name
+        <input
+          type="text"
+          id="export-filename"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </label>
+      <label class="dialog-field">
+        Format
+        <select id="export-format">
+          <option value="png" selected>PNG</option>
+          <option value="jpeg">JPG</option>
+        </select>
+      </label>
+      <div class="dialog-actions">
+        <button type="button" id="btn-export-cancel" class="btn">Cancel</button>
+        <button type="button" id="btn-export-confirm" class="btn">Export</button>
       </div>
     </dialog>
 

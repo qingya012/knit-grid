@@ -35,6 +35,9 @@
   --tool-active-bg: #ebebeb;
   --tool-active-border: #525252;
 
+  --selection-border: #525252;
+  --selection-fill: rgba(82, 82, 82, 0.12);
+
   /* Chart */
   --chart-canvas-border: #a3a3a3;
   --legend-key-cell-bg: #ffffff;

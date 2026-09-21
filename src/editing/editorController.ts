@@ -19,8 +19,17 @@ import {
   setCellSymbolId,
 } from "../chart/chartModel";
 import { parseHexColor } from "../colors/hexColor";
+import { getClipboard, setClipboard } from "../selection/clipboard";
+import type { CellCoord, CellRect } from "../selection/types";
+import {
+  clearRegionContents,
+  extractRegion,
+  flipHorizontal,
+  flipVertical,
+  pasteRegion,
+} from "../selection/selectionOps";
 
-export type PaintMode = "symbol" | "color" | "clearColor";
+export type PaintMode = "symbol" | "color" | "clearColor" | "select";
 
 export class EditorController {
   chart: Chart;
@@ -61,6 +70,58 @@ export class EditorController {
     this.paintMode = "clearColor";
   }
 
+  setSelectTool(): void {
+    this.paintMode = "select";
+    this.endStroke();
+  }
+
+  mutateOnce(mutator: () => void): void {
+    pushSnapshot(this.history, this.chart.cells);
+    mutator();
+  }
+
+  copySelection(rect: CellRect): void {
+    setClipboard(extractRegion(this.chart, rect));
+  }
+
+  cutSelection(rect: CellRect): void {
+    const data = extractRegion(this.chart, rect);
+    this.mutateOnce(() => {
+      setClipboard(data);
+      clearRegionContents(this.chart, rect);
+    });
+  }
+
+  deleteSelection(rect: CellRect): void {
+    this.mutateOnce(() => {
+      clearRegionContents(this.chart, rect);
+    });
+  }
+
+  pasteSelection(anchor: CellCoord): CellRect | null {
+    const data = getClipboard();
+    if (!data) {
+      return null;
+    }
+    let pasted: CellRect | null = null;
+    this.mutateOnce(() => {
+      pasted = pasteRegion(this.chart, anchor.row, anchor.col, data);
+    });
+    return pasted;
+  }
+
+  flipSelectionHorizontal(rect: CellRect): void {
+    this.mutateOnce(() => {
+      flipHorizontal(this.chart, rect);
+    });
+  }
+
+  flipSelectionVertical(rect: CellRect): void {
+    this.mutateOnce(() => {
+      flipVertical(this.chart, rect);
+    });
+  }
+
   beginStroke(): void {
     this.strokeActive = true;
     this.strokeSnapshotTaken = false;
@@ -72,7 +133,7 @@ export class EditorController {
   }
 
   paintCell(row: number, col: number): boolean {
-    if (!this.strokeActive) {
+    if (!this.strokeActive || this.paintMode === "select") {
       return false;
     }
 

@@ -4,6 +4,7 @@ import { BLANK_SYMBOL_ID } from "../types";
 import type { SymbolRegistry } from "../symbols/symbolRegistry";
 import { getCell } from "../chart/chartModel";
 import { symbolFillColor } from "./cellContrast";
+import type { CellRect } from "../selection/types";
 import { FONT_SYMBOL_GLYPH, FONT_UI } from "./fontStacks";
 
 export interface RenderOptions {
@@ -14,6 +15,9 @@ export interface RenderOptions {
   textColor?: string;
   labelFontSize?: number;
   labelColor?: string;
+  selectionRect?: CellRect | null;
+  selectionBorderColor?: string;
+  selectionFillColor?: string;
 }
 
 export interface RenderedSize {
@@ -35,9 +39,14 @@ export interface RenderedFrameSize extends RenderedSize {
   gridHeight: number;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<RenderOptions, "cellSizePx">> & {
-  cellSizePx: number;
-} = {
+type CoreRenderOptions = Required<
+  Omit<
+    RenderOptions,
+    "cellSizePx" | "selectionRect" | "selectionBorderColor" | "selectionFillColor"
+  >
+>;
+
+const DEFAULT_OPTIONS: CoreRenderOptions & { cellSizePx: number } = {
   cellSizePx: 20,
   lineWidth: 1,
   background: "#ffffff",
@@ -108,7 +117,7 @@ function drawGrid(
   ctx: CanvasRenderingContext2D,
   chart: Chart,
   registry: SymbolRegistry,
-  opts: Required<Omit<RenderOptions, "cellSizePx">> & { cellSizePx: number },
+  opts: CoreRenderOptions & { cellSizePx: number },
   originX: number,
   originY: number,
 ): { gridWidth: number; gridHeight: number } {
@@ -176,11 +185,35 @@ function drawGrid(
   return { gridWidth, gridHeight };
 }
 
+function drawSelectionOverlay(
+  ctx: CanvasRenderingContext2D,
+  rect: CellRect,
+  cellSizePx: number,
+  lineWidth: number,
+  borderColor: string,
+  fillColor: string,
+): void {
+  const inset = lineWidth / 2;
+  const x = rect.startCol * cellSizePx + inset;
+  const y = rect.startRow * cellSizePx + inset;
+  const w = (rect.endCol - rect.startCol + 1) * cellSizePx - lineWidth;
+  const h = (rect.endRow - rect.startRow + 1) * cellSizePx - lineWidth;
+
+  ctx.save();
+  ctx.fillStyle = fillColor;
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.restore();
+}
+
 function drawFrameLabels(
   ctx: CanvasRenderingContext2D,
   chart: Chart,
   layout: ChartFrameLayout,
-  opts: Required<Omit<RenderOptions, "cellSizePx">> & { cellSizePx: number },
+  opts: CoreRenderOptions & { cellSizePx: number },
 ): void {
   const cell = opts.cellSizePx;
   ctx.fillStyle = opts.labelColor;
@@ -256,6 +289,16 @@ export function renderChartFrame(
   ctx.fillRect(0, 0, layout.frameWidth, layout.frameHeight);
 
   drawGrid(ctx, chart, registry, opts, 0, 0);
+  if (options.selectionRect) {
+    drawSelectionOverlay(
+      ctx,
+      options.selectionRect,
+      opts.cellSizePx,
+      opts.lineWidth,
+      options.selectionBorderColor ?? "#525252",
+      options.selectionFillColor ?? "rgba(82, 82, 82, 0.12)",
+    );
+  }
   drawFrameLabels(ctx, chart, layout, opts);
 
   return {
