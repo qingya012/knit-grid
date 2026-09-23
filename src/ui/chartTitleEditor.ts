@@ -4,6 +4,7 @@ import {
   getChartTitle,
   setChartTitle,
 } from "../chart/chartTitle";
+import { EDIT_PENCIL_ICON_SVG } from "./icons";
 
 export interface ChartTitleEditorElements {
   container: HTMLElement;
@@ -15,23 +16,33 @@ function displayText(): string {
 
 function renderDisplay(container: HTMLElement): void {
   container.replaceChildren();
+  const row = document.createElement("div");
+  row.className = "chart-title-row";
+
   const heading = document.createElement("h1");
   heading.id = "chart-title";
   heading.className = "chart-title";
   heading.tabIndex = 0;
   heading.textContent = displayText();
-  container.append(heading);
-  bindDisplayHeading(container, heading);
+
+  const editHint = document.createElement("span");
+  editHint.className = "chart-title-edit-icon";
+  editHint.innerHTML = EDIT_PENCIL_ICON_SVG;
+
+  row.append(heading, editHint);
+  container.append(row);
+  bindDisplayRow(container, row, heading);
 }
 
-function bindDisplayHeading(
+function bindDisplayRow(
   container: HTMLElement,
+  row: HTMLElement,
   heading: HTMLHeadingElement,
 ): void {
   const startEdit = () => {
     openEditor(container, heading.textContent ?? "");
   };
-  heading.addEventListener("click", startEdit);
+  row.addEventListener("click", startEdit);
   heading.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();

@@ -1,4 +1,19 @@
+import {
+  applyFitFactor,
+  canZoomIn,
+  canZoomOut,
+  computeFitZoomFactor,
+  enterFitMode,
+  getDisplayZoomPercent,
+  getEffectiveCellSizePx,
+  isFitMode,
+  onViewStateChange,
+  resetToFitMode,
+  zoomIn,
+  zoomOut,
+} from "./chart/chartDisplayZoom";
 import { usedSymbolsForLegend } from "./chart/usedSymbols";
+import { measurePresentationChrome } from "./ui/chartViewportMeasure";
 import {
   EditorController,
   type PaintMode,
@@ -11,16 +26,25 @@ import {
   renderChartFrame,
 } from "./render/chartRenderer";
 import { SymbolRegistry } from "./symbols/symbolRegistry";
+import type { PaletteSnapshot } from "./chart/chartHistory";
 import {
   addSessionColor,
   formatColorTitle,
   getSessionColors,
+  hasSessionColor,
+  removeSessionColor,
+  replaceSessionColor,
+  setSessionColors,
 } from "./ui/colorTools";
+import { isContextMenuOpen, openContextMenu } from "./ui/contextMenu";
 import {
   bindColorDialog,
   openColorDialog,
+  openColorDialogForEdit,
+  showColorDuplicateError,
   type ColorDialogElements,
 } from "./ui/colorDialog";
+import { parseHexColor } from "./colors/hexColor";
 import { hasClipboardData } from "./selection/clipboard";
 import { SelectionController } from "./selection/selectionController";
 import { cellInRect } from "./selection/types";
@@ -38,6 +62,10 @@ import {
   type ChartTitleEditorElements,
 } from "./ui/chartTitleEditor";
 import {
+  mountControlTooltip,
+  syncControlTooltip,
+} from "./ui/controlTooltip";
+import {
   bindExportDialog,
   openExportDialog,
   type ExportDialogElements,
@@ -48,12 +76,12 @@ import {
   closeSymbolDialog,
   DUPLICATE_SYMBOL_MESSAGE,
   openSymbolDialog,
+  openSymbolDialogForEdit,
   showDuplicateSymbolToast,
+  showSymbolDialogSymbolFieldError,
   type SymbolDialogElements,
 } from "./ui/symbolDialog";
-import { BLANK_SYMBOL_ID } from "./types";
-
-const DISPLAY_CELL_SIZE = 28;
+import { BLANK_SYMBOL_ID, type SymbolId } from "./types";
 
 function themeCssVar(name: string, fallback: string): string {
   const raw = getComputedStyle(document.documentElement)
@@ -78,6 +106,22 @@ const btnRedo = document.getElementById("btn-redo") as HTMLButtonElement;
 const btnClear = document.getElementById("btn-clear")!;
 const btnExport = document.getElementById("btn-export") as HTMLButtonElement;
 const chartTitleSlot = document.getElementById("chart-title-slot")!;
+const chartViewportScroll = document.getElementById(
+  "chart-viewport-scroll",
+)!;
+const chartViewportCenter = document.getElementById(
+  "chart-viewport-center",
+)!;
+const chartViewportContent = document.getElementById(
+  "chart-viewport-content",
+)!;
+const toolbarZoom = document.getElementById("toolbar-zoom")!;
+const btnZoomOut = document.getElementById(
+  "btn-zoom-out",
+) as HTMLButtonElement;
+const btnZoomIn = document.getElementById("btn-zoom-in") as HTMLButtonElement;
+const btnZoomFit = document.getElementById("btn-zoom-fit") as HTMLButtonElement;
+const zoomPercentLabel = document.getElementById("zoom-percent-label")!;
 const chartTitleEditor: ChartTitleEditorElements = {
   container: chartTitleSlot,
 };
@@ -105,14 +149,15 @@ btnSelFlipV.innerHTML = FLIP_V_ICON_SVG;
 
 const symbolDialog: SymbolDialogElements = {
   dialog: document.getElementById("symbol-dialog") as HTMLDialogElement,
+  titleEl: document.getElementById("symbol-dialog-title") as HTMLHeadingElement,
   stitchControlSlot: document.getElementById("stitch-control-slot")!,
   presetSelect: document.getElementById("stitch-preset") as HTMLSelectElement,
   symbolInput: document.getElementById("modal-symbol-char") as HTMLInputElement,
   btnUsePreset: document.getElementById(
     "btn-use-preset",
   ) as HTMLButtonElement,
-  errorEl: document.getElementById("create-symbol-error")!,
-  toastEl: document.getElementById("symbol-dialog-toast")!,
+  stitchErrorEl: document.getElementById("stitch-field-error")!,
+  symbolErrorEl: document.getElementById("symbol-field-error")!,
   btnCancel: document.getElementById("btn-dialog-cancel") as HTMLButtonElement,
   btnCreate: document.getElementById("btn-dialog-create") as HTMLButtonElement,
 };
@@ -127,9 +172,11 @@ const exportDialog: ExportDialogElements = {
 
 const colorDialog: ColorDialogElements = {
   dialog: document.getElementById("color-dialog") as HTMLDialogElement,
+  titleEl: document.getElementById("color-dialog-title") as HTMLHeadingElement,
   presetGrid: document.getElementById("color-preset-grid")!,
   selectedPreview: document.getElementById("color-selected-preview")!,
   hexInput: document.getElementById("color-hex-input") as HTMLInputElement,
+  colorErrorEl: document.getElementById("color-field-error")!,
   btnChooseMore: document.getElementById(
     "btn-choose-more-colors",
   ) as HTMLButtonElement,
@@ -143,18 +190,36 @@ const colorDialog: ColorDialogElements = {
 const registry = new SymbolRegistry();
 const editor = new EditorController(10, 10);
 const selection = new SelectionController();
-let paintModeBeforeSelect: PaintMode = "symbol";
+let paintModeBeforeSelect: PaintMode = "idle";
 let copyPasteModeActive = false;
 
+editor.setPaletteSnapshotProvider(() => ({
+  userSymbols: registry.getUserSymbols().map((s) => ({ ...s })),
+  sessionColors: [...getSessionColors()],
+  paintMode: editor.paintMode,
+  activeSymbolId: editor.activeSymbolId,
+  activeColor: editor.activeColor,
+}));
+
+function applyPaletteSnapshot(palette: PaletteSnapshot): void {
+  registry.replaceUserSymbols(palette.userSymbols);
+  setSessionColors(palette.sessionColors);
+  editor.activeSymbolId = palette.activeSymbolId;
+  editor.activeColor = palette.activeColor;
+  restorePaintMode(palette.paintMode as PaintMode);
+}
+
 function restorePaintMode(mode: PaintMode): void {
-  if (mode === "symbol") {
+  if (mode === "idle") {
+    editor.resetToNeutralTool();
+  } else if (mode === "symbol") {
     editor.setActiveSymbol(editor.activeSymbolId);
   } else if (mode === "color") {
     editor.setActiveColor(editor.activeColor);
   } else if (mode === "clearColor") {
     editor.setClearColorTool();
   } else {
-    editor.setActiveSymbol(editor.activeSymbolId);
+    editor.resetToNeutralTool();
   }
 }
 
@@ -208,12 +273,45 @@ function isSelectionDismissExempt(target: EventTarget | null): boolean {
   ) {
     return true;
   }
+  if (isContextMenuOpen()) {
+    return true;
+  }
+  if (toolbarZoom.contains(target)) {
+    return true;
+  }
   return false;
+}
+
+function applyViewportFit(): void {
+  const measure = measurePresentationChrome(
+    chartViewportScroll,
+    chartViewportCenter,
+    chartViewportContent,
+    chartTitleSlot,
+    legendEl,
+  );
+  const factor = computeFitZoomFactor(editor.chart, measure);
+  applyFitFactor(factor);
+}
+
+function refitIfFitMode(): void {
+  if (isFitMode()) {
+    applyViewportFit();
+  }
+}
+
+function syncZoomControlsUI(): void {
+  zoomPercentLabel.textContent = `${getDisplayZoomPercent()}%`;
+  btnZoomFit.classList.toggle("active", isFitMode());
+  btnZoomOut.disabled = !canZoomOut();
+  btnZoomIn.disabled = !canZoomIn();
+  syncControlTooltip(btnZoomOut);
+  syncControlTooltip(btnZoomIn);
 }
 
 function refreshCanvas(): void {
   renderChartFrame(canvas, editor.chart, registry, {
-    cellSizePx: DISPLAY_CELL_SIZE,
+    cellSizePx: getEffectiveCellSizePx(),
     labelFontSize: 10,
     labelColor: themeLabelColor(),
     selectionRect: selection.selection,
@@ -223,9 +321,22 @@ function refreshCanvas(): void {
 }
 
 function chartGridBounds(): { gridWidth: number; gridHeight: number } {
-  const layout = getChartFrameLayout(editor.chart, DISPLAY_CELL_SIZE);
+  const layout = getChartFrameLayout(
+    editor.chart,
+    getEffectiveCellSizePx(),
+  );
   return { gridWidth: layout.gridWidth, gridHeight: layout.gridHeight };
 }
+
+const toolbarTooltipButtons = [
+  btnUndo,
+  btnRedo,
+  btnSelCopy,
+  btnSelCut,
+  btnSelPaste,
+  btnSelFlipH,
+  btnSelFlipV,
+] as const;
 
 function refreshToolbar(): void {
   btnUndo.disabled = !editor.canUndo();
@@ -244,6 +355,9 @@ function refreshSelectionToolbar(): void {
   btnSelFlipH.disabled = !hasSelection;
   btnSelFlipV.disabled = !hasSelection;
   btnSelPaste.disabled = !hasClipboardData() || !hasSelection;
+  for (const btn of toolbarTooltipButtons) {
+    syncControlTooltip(btn);
+  }
 }
 
 function makeEraserButton(): HTMLButtonElement {
@@ -251,8 +365,8 @@ function makeEraserButton(): HTMLButtonElement {
   btn.type = "button";
   btn.className = "palette-btn palette-btn--icon";
   btn.innerHTML = ERASER_ICON_SVG;
-  btn.setAttribute("aria-label", "Eraser");
-  btn.title = "Eraser";
+  btn.setAttribute("aria-label", "Erase stitch");
+  btn.title = "Erase stitch";
   if (
     editor.paintMode !== "select" &&
     editor.paintMode === "symbol" &&
@@ -298,7 +412,43 @@ function makeSymbolButton(sym: {
     editor.setActiveSymbol(sym.id);
     refreshToolActiveState();
   });
+  btn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    openContextMenu(e.clientX, e.clientY, [
+      {
+        label: "Edit",
+        onSelect: () => {
+          exitSelectToNormal();
+          const current = registry.get(sym.id);
+          if (current) {
+            openSymbolDialogForEdit(symbolDialog, current);
+          }
+        },
+      },
+      {
+        label: "Remove",
+        onSelect: () => {
+          removeSidebarSymbol(sym.id);
+        },
+      },
+    ]);
+  });
   return btn;
+}
+
+function removeSidebarSymbol(symbolId: SymbolId): void {
+  if (!registry.get(symbolId)) {
+    return;
+  }
+  editor.pushPaletteSnapshot();
+  const wasActive =
+    editor.paintMode === "symbol" && editor.activeSymbolId === symbolId;
+  registry.removeSymbol(symbolId);
+  editor.removeStitchFromChart(symbolId);
+  if (wasActive) {
+    editor.resetToNeutralTool();
+  }
+  refreshAll();
 }
 
 function makeCreateButton(): HTMLButtonElement {
@@ -306,8 +456,8 @@ function makeCreateButton(): HTMLButtonElement {
   btn.type = "button";
   btn.className = "palette-btn palette-btn--icon palette-btn--create";
   btn.textContent = "+";
-  btn.setAttribute("aria-label", "Create symbol");
-  btn.title = "Create symbol";
+  btn.setAttribute("aria-label", "Create new stitch");
+  btn.title = "Create new stitch";
   btn.addEventListener("click", () => {
     exitSelectToNormal();
     openSymbolDialog(symbolDialog);
@@ -359,7 +509,42 @@ function makeColorSwatchButton(hex: string): HTMLButtonElement {
     editor.setActiveColor(hex);
     refreshToolActiveState();
   });
+  btn.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+    const colorHex = hex;
+    openContextMenu(e.clientX, e.clientY, [
+      {
+        label: "Edit",
+        onSelect: () => {
+          exitSelectToNormal();
+          openColorDialogForEdit(colorDialog, colorHex);
+        },
+      },
+      {
+        label: "Remove",
+        onSelect: () => {
+          removeSidebarColor(colorHex);
+        },
+      },
+    ]);
+  });
   return btn;
+}
+
+function removeSidebarColor(hex: string): void {
+  const normalized = parseHexColor(hex);
+  if (!normalized) {
+    return;
+  }
+  editor.pushPaletteSnapshot();
+  const wasActive =
+    editor.paintMode === "color" && editor.activeColor === normalized;
+  removeSessionColor(normalized);
+  editor.clearColorFromChart(normalized);
+  if (wasActive) {
+    editor.resetToNeutralTool();
+  }
+  refreshAll();
 }
 
 function makeAddColorButton(): HTMLButtonElement {
@@ -367,8 +552,8 @@ function makeAddColorButton(): HTMLButtonElement {
   btn.type = "button";
   btn.className = "palette-btn palette-btn--icon palette-btn--create";
   btn.textContent = "+";
-  btn.setAttribute("aria-label", "Add color");
-  btn.title = "Add color";
+  btn.setAttribute("aria-label", "Create new color");
+  btn.title = "Create new color";
   btn.addEventListener("click", () => {
     exitSelectToNormal();
     openColorDialog(colorDialog);
@@ -399,13 +584,19 @@ function cellAtPointer(e: PointerEvent): { row: number; col: number } | null {
   if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) {
     return null;
   }
-  return cellFromPointer(editor.chart, DISPLAY_CELL_SIZE, x, y);
+  return cellFromPointer(
+    editor.chart,
+    getEffectiveCellSizePx(),
+    x,
+    y,
+  );
 }
 
 function refreshAfterChartMutation(): void {
-  refreshCanvas();
   refreshToolbar();
   refreshLegend();
+  refitIfFitMode();
+  refreshCanvas();
 }
 
 function performCopy(): void {
@@ -497,10 +688,11 @@ function refreshLegend(): void {
 }
 
 function refreshAll(): void {
-  refreshCanvas();
   refreshToolActiveState();
   refreshToolbar();
   refreshLegend();
+  refitIfFitMode();
+  refreshCanvas();
 }
 
 function paintAtEvent(e: PointerEvent): void {
@@ -530,10 +722,24 @@ btnNewChart.addEventListener("click", () => {
   editor.newChart(rows, cols);
   selection.clearAll();
   exitSelectToNormal();
+  editor.resetToNeutralTool();
+  paintModeBeforeSelect = "idle";
   resetChartTitleToDefault(chartTitleEditor);
-  refreshToolbar();
-  refreshLegend();
+  resetToFitMode();
+  refreshAll();
+  syncZoomControlsUI();
 });
+
+function onChartDimensionEnter(e: KeyboardEvent): void {
+  if (e.key !== "Enter") {
+    return;
+  }
+  e.preventDefault();
+  btnNewChart.click();
+}
+
+inputRows.addEventListener("keydown", onChartDimensionEnter);
+inputCols.addEventListener("keydown", onChartDimensionEnter);
 
 btnSelect.addEventListener("click", () => {
   if (editor.paintMode === "select") {
@@ -549,14 +755,49 @@ btnSelPaste.addEventListener("click", () => performPaste());
 btnSelFlipH.addEventListener("click", () => performFlipHorizontal());
 btnSelFlipV.addEventListener("click", () => performFlipVertical());
 
-bindColorDialog(colorDialog, (hex) => {
+bindColorDialog(colorDialog, (hex, editHex) => {
+  if (hasSessionColor(hex, editHex ?? undefined)) {
+    showColorDuplicateError(colorDialog);
+    return false;
+  }
+  if (editHex) {
+    const oldHex = parseHexColor(editHex);
+    const newHex = parseHexColor(hex);
+    if (!oldHex || !newHex) {
+      return false;
+    }
+    editor.pushPaletteSnapshot();
+    const wasActive =
+      editor.paintMode === "color" && editor.activeColor === oldHex;
+    const updated = replaceSessionColor(oldHex, newHex);
+    editor.replaceColorInChart(oldHex, updated);
+    if (wasActive) {
+      editor.setActiveColor(updated);
+    }
+    refreshAll();
+    return true;
+  }
   editor.setActiveColor(hex);
   addSessionColor(editor.activeColor);
   refreshToolActiveState();
+  return true;
 });
 
-bindSymbolDialog(symbolDialog, (values) => {
+bindSymbolDialog(symbolDialog, (values, editId) => {
   try {
+    if (editId) {
+      editor.pushPaletteSnapshot();
+      registry.updateSymbol(editId, values);
+      if (
+        editor.paintMode === "symbol" &&
+        editor.activeSymbolId === editId
+      ) {
+        editor.setActiveSymbol(editId);
+      }
+      closeSymbolDialog(symbolDialog);
+      refreshAll();
+      return;
+    }
     const created = registry.addCustomSymbol(values);
     editor.setActiveSymbol(created.id);
     closeSymbolDialog(symbolDialog);
@@ -569,25 +810,32 @@ bindSymbolDialog(symbolDialog, (values) => {
       showDuplicateSymbolToast(symbolDialog);
       return;
     }
-    symbolDialog.errorEl.hidden = false;
-    symbolDialog.errorEl.textContent =
-      err instanceof Error ? err.message : "Could not create symbol.";
+    showSymbolDialogSymbolFieldError(
+      symbolDialog,
+      err instanceof Error ? err.message : "Could not save symbol.",
+    );
   }
 });
 
 btnUndo.addEventListener("click", () => {
-  if (editor.undo()) {
+  const snapshot = editor.undo();
+  if (snapshot) {
+    if (snapshot.palette) {
+      applyPaletteSnapshot(snapshot.palette);
+    }
     exitSelectToNormal();
-    refreshToolbar();
-    refreshLegend();
+    refreshAll();
   }
 });
 
 btnRedo.addEventListener("click", () => {
-  if (editor.redo()) {
+  const snapshot = editor.redo();
+  if (snapshot) {
+    if (snapshot.palette) {
+      applyPaletteSnapshot(snapshot.palette);
+    }
     exitSelectToNormal();
-    refreshToolbar();
-    refreshLegend();
+    refreshAll();
   }
 });
 
@@ -739,4 +987,45 @@ document.addEventListener("pointerdown", (e) => {
   exitSelectToNormal();
 });
 
+for (const btn of toolbarTooltipButtons) {
+  mountControlTooltip(btn);
+}
+
+mountControlTooltip(btnZoomOut);
+mountControlTooltip(btnZoomIn);
+mountControlTooltip(btnZoomFit);
+
+btnZoomOut.addEventListener("click", () => {
+  zoomOut();
+  refreshCanvas();
+});
+
+btnZoomIn.addEventListener("click", () => {
+  zoomIn();
+  refreshCanvas();
+});
+
+btnZoomFit.addEventListener("click", () => {
+  enterFitMode();
+  applyViewportFit();
+  refreshCanvas();
+});
+
+onViewStateChange(() => {
+  syncZoomControlsUI();
+});
+
+new ResizeObserver(() => {
+  if (!isFitMode()) {
+    return;
+  }
+  applyViewportFit();
+  refreshCanvas();
+}).observe(chartViewportScroll);
+
 refreshAll();
+requestAnimationFrame(() => {
+  applyViewportFit();
+  refreshCanvas();
+  syncZoomControlsUI();
+});

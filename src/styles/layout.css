@@ -6,9 +6,15 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   padding: 1.25rem 1rem;
   font-family: var(--font-ui);
   font-size: 0.9375rem;
@@ -16,12 +22,14 @@ body {
   line-height: 1.4;
   color: var(--text-primary);
   background: var(--page-bg);
+  box-sizing: border-box;
 }
 
 .app-shell {
   max-width: 72rem;
   margin: 0 auto;
-  min-height: calc(100vh - 2.5rem);
+  height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--shell-border);
@@ -38,9 +46,18 @@ body {
   flex-shrink: 0;
 }
 
+.top-toolbar__brand-block {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  line-height: 1.15;
+}
+
 .top-toolbar__brand {
   font-size: 1.05rem;
-  margin-right: 0.5rem;
 }
 
 .top-toolbar__actions {
@@ -51,8 +68,17 @@ body {
   flex: 1;
 }
 
-.top-toolbar .btn--export {
+.top-toolbar__zoom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   margin-left: auto;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.top-toolbar .btn--export {
+  flex-shrink: 0;
 }
 
 .app-body {
@@ -67,6 +93,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1.35rem;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -105,18 +132,68 @@ body {
 
 .workspace {
   min-width: 0;
-  min-height: 12rem;
-  display: flex;
-}
-
-.workspace-inner {
+  min-height: 0;
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.chart-viewport {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chart-viewport-scroll {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+}
+
+.chart-viewport-center {
+  box-sizing: border-box;
+  min-height: 100%;
+  min-width: 100%;
+  width: max-content;
+  max-width: none;
+  flex-shrink: 0;
+  margin: auto;
   padding: 1.25rem 1rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chart-viewport-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  width: max-content;
+  min-width: max-content;
+  max-width: none;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.chart-viewport-content .chart-title-slot {
+  width: max-content;
+  max-width: none;
+}
+
+.chart-viewport-content .legend-preview {
+  max-width: none;
+}
+
+.chart-viewport-content #chart-canvas {
+  flex-shrink: 0;
 }
 
 .symbol-palette {
@@ -132,5 +209,4 @@ body {
   gap: 0.5rem 1.25rem;
   align-items: center;
   justify-content: center;
-  max-width: 100%;
 }

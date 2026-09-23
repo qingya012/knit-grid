@@ -2,22 +2,22 @@
 
 :root {
   /* Page */
-  --page-bg: #f5f5f4;
+  --page-bg: #faf8f5;
   --text-primary: #1a1a1a;
   --text-secondary: #5c5c5c;
 
   /* Shell surfaces */
-  --toolbar-bg: #fafafa;
-  --sidebar-bg: #f0f0ef;
+  --toolbar-bg: #e8e1d9;
+  --sidebar-bg: #f3efea;
   --workspace-bg: #ffffff;
 
   /* Structural borders (independent of surface backgrounds) */
   --border-color: #d4d4d4;
   --border-strong: #a3a3a3;
-  --toolbar-border: #d4d4d4;
-  --sidebar-border: #d4d4d4;
-  --workspace-border: #e5e5e5;
-  --shell-border: #c9c9c9;
+  --toolbar-border: #d8d3cd;
+  --sidebar-border: #d8d3cd;
+  --workspace-border: #d8d3cd;
+  --shell-border: #d8d3cd;
 
   /* Controls */
   --control-bg: #ffffff;
@@ -58,6 +58,7 @@
 
   /* Typography */
   --font-brand: "Space Grotesk", sans-serif;
+  --font-signature: "Sacramento", cursive;
   --font-ui: "DM Sans", system-ui, sans-serif;
   --font-symbol-glyph: "DM Sans", "Arial Unicode MS", sans-serif;
 

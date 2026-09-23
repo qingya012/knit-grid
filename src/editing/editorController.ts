@@ -1,6 +1,11 @@
 import type { Chart, SymbolId } from "../types";
 import { BLANK_SYMBOL_ID } from "../types";
 import {
+  clearColorFromChart,
+  clearStitchFromChart,
+  replaceColorInChart,
+} from "../chart/chartBulkOps";
+import {
   canRedo,
   canUndo,
   createHistory,
@@ -9,6 +14,8 @@ import {
   resetHistory,
   undo,
   type ChartHistory,
+  type HistorySnapshot,
+  type PaletteSnapshot,
 } from "../chart/chartHistory";
 import {
   clearChart,
@@ -29,17 +36,18 @@ import {
   pasteRegion,
 } from "../selection/selectionOps";
 
-export type PaintMode = "symbol" | "color" | "clearColor" | "select";
+export type PaintMode = "idle" | "symbol" | "color" | "clearColor" | "select";
 
 export class EditorController {
   chart: Chart;
-  paintMode: PaintMode = "symbol";
+  paintMode: PaintMode = "idle";
   activeSymbolId: SymbolId = BLANK_SYMBOL_ID;
   activeColor = "#c97a8b";
   readonly history: ChartHistory = createHistory();
 
   private strokeActive = false;
   private strokeSnapshotTaken = false;
+  private paletteSnapshotProvider: (() => PaletteSnapshot) | null = null;
 
   constructor(rows: number, cols: number) {
     this.chart = createChart(rows, cols);
@@ -75,8 +83,31 @@ export class EditorController {
     this.endStroke();
   }
 
+  resetToNeutralTool(): void {
+    this.paintMode = "idle";
+    this.endStroke();
+  }
+
+  setPaletteSnapshotProvider(provider: () => PaletteSnapshot): void {
+    this.paletteSnapshotProvider = provider;
+  }
+
+  private currentHistorySnapshot(includePalette: boolean): HistorySnapshot {
+    return {
+      cells: this.chart.cells,
+      palette:
+        includePalette && this.paletteSnapshotProvider
+          ? this.paletteSnapshotProvider()
+          : undefined,
+    };
+  }
+
+  pushPaletteSnapshot(): void {
+    pushSnapshot(this.history, this.currentHistorySnapshot(true));
+  }
+
   mutateOnce(mutator: () => void): void {
-    pushSnapshot(this.history, this.chart.cells);
+    pushSnapshot(this.history, this.currentHistorySnapshot(false));
     mutator();
   }
 
@@ -133,7 +164,11 @@ export class EditorController {
   }
 
   paintCell(row: number, col: number): boolean {
-    if (!this.strokeActive || this.paintMode === "select") {
+    if (
+      !this.strokeActive ||
+      this.paintMode === "select" ||
+      this.paintMode === "idle"
+    ) {
       return false;
     }
 
@@ -144,7 +179,7 @@ export class EditorController {
         return false;
       }
       if (!this.strokeSnapshotTaken) {
-        pushSnapshot(this.history, this.chart.cells);
+        pushSnapshot(this.history, this.currentHistorySnapshot(false));
         this.strokeSnapshotTaken = true;
       }
       setCellSymbolId(this.chart, row, col, this.activeSymbolId);
@@ -155,7 +190,7 @@ export class EditorController {
         return false;
       }
       if (!this.strokeSnapshotTaken) {
-        pushSnapshot(this.history, this.chart.cells);
+        pushSnapshot(this.history, this.currentHistorySnapshot(false));
         this.strokeSnapshotTaken = true;
       }
       setCellBackgroundColor(this.chart, row, col, this.activeColor);
@@ -166,7 +201,7 @@ export class EditorController {
         return false;
       }
       if (!this.strokeSnapshotTaken) {
-        pushSnapshot(this.history, this.chart.cells);
+        pushSnapshot(this.history, this.currentHistorySnapshot(false));
         this.strokeSnapshotTaken = true;
       }
       setCellBackgroundColor(this.chart, row, col, null);
@@ -176,27 +211,39 @@ export class EditorController {
     return changed;
   }
 
-  undo(): boolean {
-    const prev = undo(this.history, this.chart.cells);
+  undo(): HistorySnapshot | null {
+    const prev = undo(this.history, this.currentHistorySnapshot(true));
     if (prev === null) {
-      return false;
+      return null;
     }
-    this.chart.cells = prev;
-    return true;
+    this.chart.cells = prev.cells;
+    return prev;
   }
 
-  redo(): boolean {
-    const next = redo(this.history, this.chart.cells);
+  redo(): HistorySnapshot | null {
+    const next = redo(this.history, this.currentHistorySnapshot(true));
     if (next === null) {
-      return false;
+      return null;
     }
-    this.chart.cells = next;
-    return true;
+    this.chart.cells = next.cells;
+    return next;
   }
 
   clear(): void {
-    pushSnapshot(this.history, this.chart.cells);
+    pushSnapshot(this.history, this.currentHistorySnapshot(false));
     clearChart(this.chart);
+  }
+
+  removeStitchFromChart(symbolId: SymbolId): void {
+    clearStitchFromChart(this.chart, symbolId);
+  }
+
+  replaceColorInChart(fromHex: string, toHex: string): void {
+    replaceColorInChart(this.chart, fromHex, toHex);
+  }
+
+  clearColorFromChart(hex: string): void {
+    clearColorFromChart(this.chart, hex);
   }
 
   canUndo(): boolean {

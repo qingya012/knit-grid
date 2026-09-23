@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Space+Grotesk:wght@600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600&family=Sacramento&family=Space+Grotesk:wght@600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/src/styles.css" />
@@ -15,7 +15,11 @@
   <body>
     <div class="app-shell">
       <header class="top-toolbar">
-        <div class="top-toolbar__brand brand-wordmark">KnitGrid</div>
+        <div class="top-toolbar__brand-block">
+          <div class="top-toolbar__brand brand-wordmark">KnitGrid</div>
+          <!-- Edit signature text below (Sacramento line under the logo) -->
+          <p class="brand-signature">Designed by idk</p>
+        </div>
         <div class="top-toolbar__actions">
           <button
             type="button"
@@ -130,6 +134,39 @@
           </div>
           <button type="button" id="btn-clear" class="btn">Clear</button>
         </div>
+        <div class="top-toolbar__zoom" id="toolbar-zoom">
+          <button
+            type="button"
+            id="btn-zoom-out"
+            class="btn btn-icon chart-zoom-btn"
+            aria-label="Zoom out"
+            title="Zoom out"
+          >
+            −
+          </button>
+          <span
+            id="zoom-percent-label"
+            class="chart-zoom-percent"
+            aria-live="polite"
+          >100%</span>
+          <button
+            type="button"
+            id="btn-zoom-in"
+            class="btn btn-icon chart-zoom-btn"
+            aria-label="Zoom in"
+            title="Zoom in"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            id="btn-zoom-fit"
+            class="btn chart-zoom-fit-btn"
+            title="Fit to view"
+          >
+            Fit
+          </button>
+        </div>
         <button type="button" id="btn-export" class="btn btn--export">
           <svg
             class="icon"
@@ -180,17 +217,23 @@
         </aside>
 
         <main class="workspace">
-          <div class="workspace-inner">
-            <div id="chart-title-slot" class="chart-title-slot"></div>
-            <canvas id="chart-canvas"></canvas>
-            <div id="legend-preview" class="legend-preview"></div>
+          <div class="chart-viewport" id="chart-viewport">
+            <div class="chart-viewport-scroll" id="chart-viewport-scroll">
+              <div class="chart-viewport-center" id="chart-viewport-center">
+                <div class="chart-viewport-content" id="chart-viewport-content">
+                  <div id="chart-title-slot" class="chart-title-slot"></div>
+                  <canvas id="chart-canvas"></canvas>
+                  <div id="legend-preview" class="legend-preview"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </main>
       </div>
     </div>
 
     <dialog id="symbol-dialog" class="editor-dialog">
-      <h2>Create Symbol</h2>
+      <h2 id="symbol-dialog-title">Create Symbol</h2>
       <form method="dialog" id="symbol-dialog-form">
         <div class="dialog-field">
           <span class="dialog-field-label">Stitch</span>
@@ -200,29 +243,32 @@
           <button type="button" id="btn-use-preset" class="btn-use-preset" hidden>
             Use preset
           </button>
+          <p
+            id="stitch-field-error"
+            class="dialog-field-error"
+            hidden
+            aria-live="polite"
+          ></p>
         </div>
         <label class="dialog-field">
           Symbol
           <input type="text" id="modal-symbol-char" maxlength="4" />
+          <span
+            id="symbol-field-error"
+            class="dialog-field-error"
+            hidden
+            aria-live="polite"
+          ></span>
         </label>
-        <p id="create-symbol-error" class="error" hidden></p>
         <div class="dialog-actions">
           <button type="button" id="btn-dialog-cancel" class="btn">Cancel</button>
           <button type="button" id="btn-dialog-create" class="btn">Create</button>
         </div>
       </form>
-      <div
-        id="symbol-dialog-toast"
-        class="symbol-dialog-toast"
-        hidden
-        aria-live="polite"
-      >
-        Symbol already exists
-      </div>
     </dialog>
 
     <dialog id="color-dialog" class="editor-dialog">
-      <h2>Add Color</h2>
+      <h2 id="color-dialog-title">Add Color</h2>
       <p class="dialog-section-label">Quick Colors</p>
       <div class="dialog-field dialog-field--compact">
         <div id="color-preset-grid" class="color-preset-grid"></div>
@@ -246,6 +292,12 @@
             />
           </label>
         </div>
+        <p
+          id="color-field-error"
+          class="dialog-field-error"
+          hidden
+          aria-live="polite"
+        ></p>
         <button
           type="button"
           id="btn-choose-more-colors"

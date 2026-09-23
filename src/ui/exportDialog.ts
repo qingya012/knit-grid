@@ -1,4 +1,8 @@
 import { getChartTitle } from "../chart/chartTitle";
+import {
+  bindDialogEnterSubmit,
+  bindEditorDialogDismiss,
+} from "./editorDialogDismiss";
 import type { ChartImageFormat } from "../export/chartImageExport";
 
 export interface ExportDialogElements {
@@ -21,22 +25,16 @@ export function bindExportDialog(
     elements.dialog.close();
   }
 
-  elements.btnCancel.addEventListener("click", () => {
+  const cancelDialog = (): void => {
     elements.dialog.close();
-  });
+  };
+
+  bindEditorDialogDismiss(elements.dialog, cancelDialog);
+  bindDialogEnterSubmit(elements.dialog, elements.btnExport);
+
+  elements.btnCancel.addEventListener("click", cancelDialog);
 
   elements.btnExport.addEventListener("click", () => {
-    performExport();
-  });
-
-  elements.dialog.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter") {
-      return;
-    }
-    if (e.target instanceof HTMLTextAreaElement) {
-      return;
-    }
-    e.preventDefault();
     performExport();
   });
 }

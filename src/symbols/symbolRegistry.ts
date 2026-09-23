@@ -30,11 +30,16 @@ export class SymbolRegistry {
     return this.getAll().filter((s) => s.id !== BLANK_SYMBOL_ID);
   }
 
-  hasStitchSymbolPair(abbreviation: string, symbol: string): boolean {
+  hasStitchSymbolPair(
+    abbreviation: string,
+    symbol: string,
+    exceptId?: SymbolId,
+  ): boolean {
     const abbr = abbreviation.trim();
     const sym = symbol.trim();
     return this.getUserSymbols().some(
-      (s) => s.abbreviation === abbr && s.symbol === sym,
+      (s) =>
+        s.id !== exceptId && s.abbreviation === abbr && s.symbol === sym,
     );
   }
 
@@ -61,6 +66,52 @@ export class SymbolRegistry {
     };
     this.byId.set(id, entry);
     return entry;
+  }
+
+  updateSymbol(id: SymbolId, input: CustomSymbolInput): void {
+    const existing = this.byId.get(id);
+    if (!existing || id === BLANK_SYMBOL_ID) {
+      throw new Error("Symbol not found.");
+    }
+    const symbol = input.symbol.trim();
+    const abbreviation = input.abbreviation.trim();
+
+    if (!symbol) {
+      throw new Error("Symbol character is required.");
+    }
+    if (!abbreviation) {
+      throw new Error("Stitch abbreviation is required.");
+    }
+    if (this.hasStitchSymbolPair(abbreviation, symbol, id)) {
+      throw new Error(DUPLICATE_SYMBOL_MESSAGE);
+    }
+
+    existing.symbol = symbol;
+    existing.abbreviation = abbreviation;
+  }
+
+  removeSymbol(id: SymbolId): void {
+    if (id === BLANK_SYMBOL_ID) {
+      throw new Error("Cannot remove blank symbol.");
+    }
+    if (!this.byId.has(id)) {
+      throw new Error("Symbol not found.");
+    }
+    this.byId.delete(id);
+  }
+
+  replaceUserSymbols(symbols: StitchSymbol[]): void {
+    for (const id of [...this.byId.keys()]) {
+      if (id !== BLANK_SYMBOL_ID) {
+        this.byId.delete(id);
+      }
+    }
+    for (const s of symbols) {
+      if (s.id === BLANK_SYMBOL_ID) {
+        continue;
+      }
+      this.byId.set(s.id, { ...s });
+    }
   }
 
   private uniqueId(base: string): SymbolId {
