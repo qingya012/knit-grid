@@ -2,6 +2,8 @@
 
 KnitGrid is a lightweight browser-based tool for creating and editing knitting charts. It focuses on a simple visual workflow: set a grid size, pick stitches and colors, and paint directly on the chart until it matches your pattern.
 
+**Live demo:** [Open KnitGrid](https://knit-grid.vercel.app/)
+
 ## Features
 
 **Chart setup**
@@ -42,29 +44,26 @@ KnitGrid is a lightweight browser-based tool for creating and editing knitting c
 - **Fit** keeps the whole chart visible in the workspace; zoom **+** / **−** switches to fixed zoom levels. Resizing the window refits when Fit is active.
 - Keyboard shortcuts (when focus is not in a text field): **⌘/Ctrl+C**, **⌘/Ctrl+X**, **⌘/Ctrl+V** for copy, cut, and paste in selection mode.
 
-## Getting Started
+> **Note:** Stitch symbols in KnitGrid are user-defined visual symbols and do not represent an official or standardized knitting symbol system.
 
-You need [Node.js](https://nodejs.org/) to install dependencies and run the dev server.
+## Local development
 
 ```bash
+git clone https://github.com/qingya012/knit-grid.git
+cd knit-grid
 npm install
 npm run dev
 ```
 
-Open the URL Vite prints (typically `http://localhost:5173`).
+Then open the local URL shown in the terminal (Vite defaults to `http://localhost:5173`).
 
-Other scripts:
-
-```bash
-npm run build    # typecheck and production build to dist/
-npm run preview  # serve the production build locally
-```
-
-## Tech Stack
+## Tech stack
 
 - TypeScript
 - [Vite](https://vite.dev/) for dev server and bundling
 - HTML, CSS, and the Canvas API (no UI framework)
+
+Zoom and Fit affect only the editor view; exported images are rendered at a fixed cell size and do not depend on your current zoom level.
 
 ## Project Structure
 
@@ -80,6 +79,7 @@ Source lives under `src/`:
 - `ui/` — dialogs, palettes, title editor, context menu
 - `styles/` — layout and component styles
 
-## Design Notes
 
-KnitGrid is intentionally small and focused: the workspace stays centered on the chart, while stitches, colors, and chart dimensions live in the sidebar and toolbar. Zoom and Fit only change how you view and edit the chart in the browser; exported images are rendered separately at a fixed cell size, so they do not depend on your current zoom level.
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
