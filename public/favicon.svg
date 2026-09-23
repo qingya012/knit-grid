@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="KnitGrid">
+  <rect width="64" height="64" fill="#F3EFEA" />
+  <text
+    x="32"
+    y="32"
+    fill="#1A1A1A"
+    font-family="'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif"
+    font-size="28"
+    font-weight="600"
+    letter-spacing="-0.02em"
+    text-anchor="middle"
+    dominant-baseline="central"
+  >KG</text>
+</svg>
