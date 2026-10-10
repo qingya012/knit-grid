@@ -29,6 +29,7 @@ KnitGrid is a lightweight browser-based tool for creating and editing knitting c
 **View and export**
 - **Fit** scales the chart to the workspace (up to 100%); manual zoom steps from 25% to 200%.
 - Export the chart as **PNG** or **JPG**, including title, grid, and legend, via a file name you choose.
+- Optionally add a blank-cell row to the exported legend (**Include blank cell**) with a custom label you define at export time.
 
 ## Usage
 

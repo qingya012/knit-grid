@@ -7,7 +7,7 @@ import {
   legendLayout,
   renderLegend,
 } from "../render/legendRenderer";
-import type { Chart } from "../types";
+import type { Chart, StitchSymbol } from "../types";
 import type { SymbolRegistry } from "../symbols/symbolRegistry";
 
 const EXPORT_CELL_SIZE_PX = 32;
@@ -23,6 +23,33 @@ const EXPORT_LABEL_FONT_SIZE = 13;
 const JPEG_QUALITY = 0.92;
 
 export type ChartImageFormat = "png" | "jpeg";
+
+export interface ExportLegendOptions {
+  includeBlankCell: boolean;
+  blankCellLabel: string;
+}
+
+const EXPORT_BLANK_LEGEND_ID = "__export_blank_legend__";
+
+function buildExportLegendEntries(
+  chart: Chart,
+  registry: SymbolRegistry,
+  legendOptions?: ExportLegendOptions,
+): StitchSymbol[] {
+  const entries = usedSymbolsForLegend(chart, registry);
+  if (!legendOptions?.includeBlankCell) {
+    return entries;
+  }
+  return [
+    ...entries,
+    {
+      id: EXPORT_BLANK_LEGEND_ID,
+      symbol: "",
+      abbreviation: legendOptions.blankCellLabel.trim(),
+      builtin: true,
+    },
+  ];
+}
 
 function measureTitleBlock(
   ctx: CanvasRenderingContext2D,
@@ -99,8 +126,13 @@ export function exportChartImage(
   chartTitleForRender: string,
   format: ChartImageFormat,
   downloadBasename: string,
+  legendOptions?: ExportLegendOptions,
 ): void {
-  const legendEntries = usedSymbolsForLegend(chart, registry);
+  const legendEntries = buildExportLegendEntries(
+    chart,
+    registry,
+    legendOptions,
+  );
 
   const frameCanvas = document.createElement("canvas");
   const frameSize = renderChartFrame(frameCanvas, chart, registry, {

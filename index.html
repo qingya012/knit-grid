@@ -337,6 +337,21 @@
           <option value="jpeg">JPG</option>
         </select>
       </label>
+      <label class="dialog-field dialog-field--checkbox">
+        <input type="checkbox" id="export-include-blank-legend" />
+        Include blank cell
+      </label>
+      <div class="dialog-field" id="export-blank-legend-field" hidden>
+        <label class="dialog-field-label" for="export-blank-legend-label">
+          Blank cell symbol
+        </label>
+        <input
+          type="text"
+          id="export-blank-legend-label"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
       <div class="dialog-actions">
         <button type="button" id="btn-export-cancel" class="btn">Cancel</button>
         <button type="button" id="btn-export-confirm" class="btn">Export</button>

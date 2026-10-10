@@ -166,6 +166,13 @@ const exportDialog: ExportDialogElements = {
   dialog: document.getElementById("export-dialog") as HTMLDialogElement,
   filenameInput: document.getElementById("export-filename") as HTMLInputElement,
   formatSelect: document.getElementById("export-format") as HTMLSelectElement,
+  includeBlankCheckbox: document.getElementById(
+    "export-include-blank-legend",
+  ) as HTMLInputElement,
+  blankLabelField: document.getElementById("export-blank-legend-field")!,
+  blankLabelInput: document.getElementById(
+    "export-blank-legend-label",
+  ) as HTMLInputElement,
   btnCancel: document.getElementById("btn-export-cancel") as HTMLButtonElement,
   btnExport: document.getElementById("btn-export-confirm") as HTMLButtonElement,
 };
@@ -846,13 +853,14 @@ btnClear.addEventListener("click", () => {
   refreshLegend();
 });
 
-bindExportDialog(exportDialog, (basename, format) => {
+bindExportDialog(exportDialog, (basename, format, legend) => {
   exportChartImage(
     editor.chart,
     registry,
     getChartTitle(),
     format,
     basename,
+    legend,
   );
 });
 
